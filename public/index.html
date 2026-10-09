@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simple Plant Disease Checker — PKM-KC Kelompok 12</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#072b2b;--deep:#12474a;--leaf:#52b069;--sky:#2f80ed;--mist:#e4efe6;--paper:#f6f8f4;--lime:#b6e86b;--white:#fff;--danger:#d9534f}
+*{box-sizing:border-box;margin:0}
+html{scroll-behavior:smooth}
+body{font-family:'Open Sans',sans-serif;background:var(--paper);color:var(--ink);line-height:1.6;overflow-x:hidden}
+h1,h2,h3,.btn{font-family:'Montserrat',sans-serif}
+h2{font-size:clamp(1.7rem,4vw,2.5rem);line-height:1.15;margin-bottom:.5rem}
+section{padding:90px 6vw;position:relative}
+.dark{background:var(--ink);color:#fff}
+.lead{max-width:62ch;opacity:.85;margin-bottom:2rem}
+:focus-visible{outline:3px solid var(--sky);outline-offset:3px}
+
+/* Tombol + ripple */
+.btn{position:relative;overflow:hidden;border:0;cursor:pointer;padding:.8rem 1.4rem;border-radius:12px;font-weight:800;font-size:.9rem;color:#fff;background:var(--sky);transition:transform .15s,box-shadow .2s,background .2s;-webkit-tap-highlight-color:transparent}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(47,128,237,.35)}
+.btn:active{transform:scale(.95)}
+.btn.green{background:var(--leaf)}.btn.green:hover{box-shadow:0 8px 20px rgba(82,176,105,.4)}
+.btn.ghost{background:transparent;border:2px solid currentColor;color:inherit}
+.btn.dark{background:var(--deep)}
+.btn[disabled]{opacity:.6;pointer-events:none}
+.ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.55);transform:scale(0);animation:rip .65s ease-out forwards;pointer-events:none}
+.ghost .ripple,.chip .ripple{background:rgba(47,128,237,.3)}
+@keyframes rip{to{transform:scale(4);opacity:0}}
+.spark{position:fixed;width:8px;height:8px;border-radius:50%;pointer-events:none;z-index:999;animation:spark .7s ease-out forwards}
+@keyframes spark{to{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0}}
+
+/* Nav */
+nav{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;gap:.6rem;padding:.8rem 6vw;background:rgba(7,43,43,.82);backdrop-filter:blur(10px);color:#fff}
+nav .logo{font-family:Montserrat;font-weight:800;margin-right:auto;display:flex;align-items:center;gap:.5rem}
+nav a{color:#cfe;text-decoration:none;font-size:.85rem;padding:.4rem .6rem;border-radius:8px;transition:background .2s}
+nav a:hover{background:rgba(255,255,255,.12)}
+.avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;background:var(--leaf);display:grid;place-items:center;font-weight:800;cursor:pointer;border:2px solid var(--lime)}
+@media(max-width:820px){nav a{display:none}}
+
+/* Hero */
+#hero{min-height:100vh;display:grid;align-items:center;background:radial-gradient(circle at 80% 30%,#145f5a 0,var(--ink) 60%);color:#fff;overflow:hidden}
+#hero h1{font-size:clamp(2.2rem,6vw,4.4rem);line-height:1.05;max-width:14ch;margin-bottom:1rem}
+#hero h1 span{display:inline-block;opacity:0;transform:translateY(40px) rotate(4deg);animation:rise .7s cubic-bezier(.2,.9,.3,1.3) forwards}
+@keyframes rise{to{opacity:1;transform:none}}
+#hero p{max-width:48ch;opacity:.85;margin-bottom:1.6rem}
+.hero-btns{display:flex;gap:.8rem;flex-wrap:wrap}
+.leaf-wrap{position:absolute;right:6vw;top:50%;width:min(36vw,380px);transform:translateY(-50%);cursor:pointer}
+.leaf-wrap svg{width:100%;filter:drop-shadow(0 20px 40px rgba(0,0,0,.5));animation:float 5s ease-in-out infinite}
+@keyframes float{50%{transform:translateY(-18px) rotate(3deg)}}
+.leaf-wrap .spot{opacity:0;transform-origin:center;transition:opacity .4s,transform .4s;transform:scale(0)}
+.leaf-wrap.sick .spot{opacity:1;transform:scale(1)}
+.leaf-wrap.sick .blade{fill:#8aa83a}
+.blade{transition:fill .6s}
+.hint{position:absolute;bottom:-2rem;left:0;right:0;text-align:center;font-size:.8rem;opacity:.7}
+@media(max-width:820px){.leaf-wrap{position:relative;right:auto;top:auto;transform:none;margin:2rem auto 0;width:220px}}
+#hero{display:block;padding-top:130px}
+.net{position:absolute;inset:0;pointer-events:none;opacity:.5}
+
+/* Kartu */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.2rem}
+.card{background:#fff;border:1.5px solid #cfdcd2;border-radius:6px;padding:1.4rem;cursor:pointer;position:relative;overflow:hidden;transition:transform .25s,background .25s,border-color .25s;user-select:none}
+.card:hover{transform:translateY(-6px) rotate(-.5deg)}
+.card.open{background:var(--mist);border-color:var(--leaf)}
+.card h3{font-size:1.05rem}
+.card .more{max-height:0;overflow:hidden;opacity:0;transition:max-height .4s,opacity .4s,margin .4s;font-size:.9rem}
+.card.open .more{max-height:220px;opacity:1;margin-top:.8rem}
+.num{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--sky);color:#fff;font-weight:800;margin-bottom:.7rem}
+.card.open .num{background:var(--leaf);animation:pop .4s}
+@keyframes pop{50%{transform:scale(1.35) rotate(8deg)}}
+
+/* Tabs / chip */
+.chips{display:flex;gap:.6rem;flex-wrap:wrap;margin-bottom:1.4rem}
+.chip{position:relative;overflow:hidden;border:2px solid var(--sky);background:transparent;color:var(--sky);border-radius:999px;padding:.5rem 1.1rem;font-weight:800;font-family:Montserrat;cursor:pointer;transition:all .2s}
+.chip.on{background:var(--sky);color:#fff;transform:scale(1.05)}
+.dark .chip{border-color:var(--lime);color:var(--lime)}.dark .chip.on{background:var(--lime);color:var(--ink)}
+.panel{display:none;background:#fff;padding:1.6rem;border-radius:6px;animation:fade .4s}
+.panel.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(12px)}}
+.panel li{margin:.5rem 0 .5rem 1.2rem}
+
+/* Pipeline */
+.flow{display:flex;gap:.6rem;flex-wrap:wrap;align-items:stretch;margin-bottom:1.4rem}
+.step{flex:1 1 150px;background:var(--deep);border:0;color:#fff;border-radius:14px;padding:1.1rem .8rem;cursor:pointer;font:inherit;font-weight:600;position:relative;overflow:hidden;transition:transform .2s,background .3s}
+.step:hover{transform:translateY(-4px)}
+.step.on{background:var(--leaf)}
+.step small{display:block;opacity:.75;font-weight:400}
+#stepInfo{min-height:3.2em;font-size:1.05rem;color:#d4f0d8}
+
+/* Checker */
+#drop{border:3px dashed var(--leaf);border-radius:14px;padding:2.2rem;text-align:center;background:#fff;cursor:pointer;transition:background .25s,transform .25s}
+#drop.over{background:var(--mist);transform:scale(1.02)}
+.check{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start}
+@media(max-width:820px){.check{grid-template-columns:1fr}}
+#prev{width:100%;max-height:300px;object-fit:contain;border-radius:12px;display:none;margin-bottom:1rem}
+.result{background:#fff;border-radius:14px;padding:1.4rem;min-height:200px}
+.meter{height:14px;border-radius:99px;background:#dde7df;overflow:hidden;margin:.6rem 0}
+.meter i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--sky),var(--leaf));border-radius:99px;transition:width 1.2s cubic-bezier(.2,.8,.2,1)}
+.scan{position:relative}
+.scan.run::after{content:"";position:absolute;left:0;right:0;height:4px;background:var(--lime);box-shadow:0 0 18px var(--lime);animation:scan 1.2s linear infinite}
+@keyframes scan{from{top:0}to{top:100%}}
+.note{font-size:.8rem;opacity:.7;margin-top:1rem}
+
+/* Rancangan sistem */
+.sys{display:flex;flex-wrap:wrap;gap:.7rem;margin-bottom:1rem}
+.node{background:#fff;border:1.5px solid #cfdcd2;padding:.8rem 1rem;border-radius:12px;font-weight:600;font-size:.9rem;transition:all .35s;opacity:.55}
+.node.lit{opacity:1;background:var(--leaf);color:#fff;transform:translateY(-6px);box-shadow:0 10px 22px rgba(82,176,105,.4)}
+
+/* Pengujian */
+.bars{display:flex;align-items:flex-end;gap:1rem;height:240px;padding:1rem;background:#fff;border-radius:6px;margin-bottom:1rem}
+.bar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;gap:.4rem;font-weight:800;font-size:.85rem}
+.bar i{display:block;width:100%;background:var(--leaf);border-radius:10px 10px 0 0;height:0;transition:height 1s cubic-bezier(.2,.8,.2,1)}
+.bar.sel i{background:var(--sky)}
+.big{font-family:Montserrat;font-weight:800;font-size:3.6rem;color:var(--leaf);line-height:1}
+#cm{display:grid;grid-template-columns:repeat(2,90px);gap:6px;margin-top:.8rem}
+#cm div{padding:1rem;text-align:center;border-radius:8px;background:var(--mist);font-weight:800;transition:transform .3s}
+#cm div:hover{transform:scale(1.1)}
+
+/* Luaran */
+.out{display:flex;align-items:center;gap:.8rem}
+.tick{width:26px;height:26px;border-radius:8px;border:2px solid var(--sky);display:grid;place-items:center;color:transparent;transition:all .25s;flex:none}
+.card.done .tick{background:var(--leaf);border-color:var(--leaf);color:#fff;transform:rotate(360deg)}
+#prog{margin-top:1.2rem;font-weight:800}
+
+footer{background:var(--ink);color:#fff;text-align:center;padding:70px 6vw}
+footer h2{max-width:20ch;margin:0 auto 1rem}
+
+/* Modal */
+#modal{position:fixed;inset:0;background:rgba(7,43,43,.7);backdrop-filter:blur(6px);display:none;place-items:center;z-index:100;padding:1rem}
+#modal.on{display:grid}
+.box{background:#fff;border-radius:18px;width:min(420px,100%);padding:1.8rem;position:relative;animation:pop2 .45s cubic-bezier(.2,.9,.3,1.3);max-height:92vh;overflow:auto}
+@keyframes pop2{from{opacity:0;transform:scale(.8) translateY(30px)}}
+.box.shake{animation:shake .4s}
+@keyframes shake{25%{transform:translateX(-10px)}75%{transform:translateX(10px)}}
+.x{position:absolute;right:12px;top:12px;width:34px;height:34px;padding:0;border-radius:50%;background:var(--mist);color:var(--ink)}
+.box h3{font-size:1.4rem;margin-bottom:.3rem}
+.box p.sub{font-size:.88rem;opacity:.7;margin-bottom:1rem}
+.box form{display:none;flex-direction:column;gap:.7rem}
+.box form.on{display:flex}
+label{font-size:.8rem;font-weight:600}
+input,textarea{width:100%;padding:.7rem .8rem;border:2px solid #cfdcd2;border-radius:10px;font:inherit;transition:border-color .2s,box-shadow .2s}
+input:focus,textarea:focus{outline:0;border-color:var(--sky);box-shadow:0 0 0 4px rgba(47,128,237,.15)}
+.pw{position:relative}.pw .btn{position:absolute;right:4px;top:4px;padding:.4rem .7rem;font-size:.75rem;background:var(--mist);color:var(--ink)}
+.links{display:flex;justify-content:space-between;font-size:.85rem;margin-top:.3rem}
+.links button{background:none;border:0;color:var(--sky);font-weight:600;cursor:pointer;font:inherit;font-weight:600}
+.msg{font-size:.85rem;min-height:1.2em}.msg.err{color:var(--danger)}.msg.ok{color:#2e8b47}
+.pav{width:96px;height:96px;border-radius:50%;object-fit:cover;background:var(--mist);display:block;margin:0 auto .5rem;border:3px solid var(--leaf)}
+#toast{position:fixed;bottom:24px;left:50%;transform:translate(-50%,120px);background:var(--ink);color:#fff;padding:.8rem 1.3rem;border-radius:12px;z-index:200;transition:transform .4s cubic-bezier(.2,.9,.3,1.3);max-width:90vw}
+#toast.on{transform:translate(-50%,0)}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">🍃 PlantCheck</div>
+  <a href="#latar">Latar</a><a href="#teknologi">Teknologi</a><a href="#checker">Cek Daun</a><a href="#sistem">Sistem</a><a href="#uji">Pengujian</a><a href="#luaran">Luaran</a>
+  <button class="btn green" id="authBtn">Masuk</button>
+  <div class="avatar" id="navAv" style="display:none" title="Profil"></div>
+</nav>
+
+<header id="hero">
+  <svg class="net" id="net"></svg>
+  <p style="color:var(--lime);font-weight:600">Kelompok 12 · PKM-KC · Informatika × Agritech × AI</p>
+  <h1 id="title">Sistem Pengecekan Penyakit pada Tumbuhan</h1>
+  <p>Foto masuk. Insight keluar. Unggah foto daun dan lihat kondisinya dalam hitungan detik.</p>
+  <div class="hero-btns">
+    <a href="#checker" class="btn green" style="text-decoration:none">Coba cek daun</a>
+    <button class="btn ghost" id="heroLogin">Masuk / Daftar</button>
+    <button class="btn ghost" id="confettiBtn">Beri kejutan 🌿</button>
+  </div>
+  <div class="leaf-wrap" id="leaf" title="Klik daunnya">
+    <svg viewBox="0 0 200 280">
+      <path class="blade" d="M100 8C30 60 10 150 100 270C190 150 170 60 100 8Z" fill="#3f9a4f"/>
+      <path d="M100 20V262" stroke="#b6e86b" stroke-width="3" fill="none"/>
+      <g fill="#5a3516"><circle class="spot" cx="70" cy="110" r="14"/><circle class="spot" cx="125" cy="150" r="18"/><circle class="spot" cx="85" cy="190" r="11"/><circle class="spot" cx="120" cy="85" r="9"/></g>
+    </svg>
+    <div class="hint">Klik daun untuk melihat gejala</div>
+  </div>
+</header>
+
+<section id="latar">
+  <h2>Dari gejala visual menjadi sinyal keputusan</h2>
+  <p class="lead">Penyakit menurunkan pertumbuhan dan produktivitas. Gejalanya tampak sebagai perubahan warna, bercak, tekstur, atau kerusakan permukaan. Karena gejala sering mirip, identifikasi manual terbatas. Pengolahan citra dan AI memberi pemeriksaan awal yang cepat dan konsisten.</p>
+  <h3 style="margin-bottom:1rem">Empat pertanyaan kunci <small style="font-weight:400">(klik untuk membuka)</small></h3>
+  <div class="grid" id="qs">
+    <div class="card" tabindex="0"><div class="num">1</div><h3>Bagaimana merancang sistem berbasis citra daun?</h3><div class="more">Foto diunggah, divalidasi, diproses, lalu dianalisis model CNN.</div></div>
+    <div class="card" tabindex="0"><div class="num">2</div><h3>Bagaimana menyiapkan data latih dan data uji?</h3><div class="more">Kumpulkan foto per kelas, bersihkan, lalu bagi menjadi data latih dan data uji.</div></div>
+    <div class="card" tabindex="0"><div class="num">3</div><h3>Bagaimana menguji kemampuan membedakan daun sehat dan sakit?</h3><div class="more">Ukur accuracy, precision, recall, dan baca confusion matrix.</div></div>
+    <div class="card" tabindex="0"><div class="num">4</div><h3>Bagaimana menyajikan prediksi agar mudah dipahami?</h3><div class="more">Tampilkan kondisi daun, confidence score, dan saran pemeriksaan lanjut.</div></div>
+  </div>
+  <h3 style="margin:2.2rem 0 1rem">Tujuan dan manfaat</h3>
+  <div class="chips" data-tabs="tm"><button class="chip on" data-t="0">Tujuan</button><button class="chip" data-t="1">Manfaat</button></div>
+  <div id="tm">
+    <div class="panel on"><ul><li>Membangun prototipe berbasis citra daun.</li><li>Menjalankan data, preprocessing, pelatihan, dan uji.</li><li>Mengukur accuracy, precision, recall, dan confusion matrix.</li></ul></div>
+    <div class="panel"><ul><li>Identifikasi awal kondisi daun.</li><li>Penerapan AI di bidang pertanian.</li><li>Media pembelajaran machine learning.</li></ul></div>
+  </div>
+</section>
+
+<section id="teknologi" class="dark">
+  <h2>Konsep teknologi</h2>
+  <p class="lead">Klik tiap tahap untuk melihat perannya.</p>
+  <div class="flow" id="flow">
+    <button class="step btn on" data-i="0">Input<small>Gambar daun</small></button>
+    <button class="step btn" data-i="1">Image processing<small>Normalisasi &amp; segmentasi</small></button>
+    <button class="step btn" data-i="2">CNN / deep learning<small>Ekstraksi pola visual</small></button>
+    <button class="step btn" data-i="3">Prediksi<small>Kondisi &amp; confidence</small></button>
+  </div>
+  <p id="stepInfo">Foto daun diunggah pengguna sebagai bahan analisis.</p>
+</section>
+
+<section id="checker">
+  <h2>Simple Plant Disease Checker</h2>
+  <p class="lead">Alat bantu identifikasi awal, bukan pengganti ahli. Versi demo ini membaca warna daun di browser; model CNN akan menggantikannya setelah pelatihan.</p>
+  <div class="check">
+    <div>
+      <div id="drop" tabindex="0"><strong>Seret foto daun ke sini</strong><br>atau klik untuk memilih<input type="file" id="file" accept="image/*" hidden></div>
+      <div style="margin-top:1rem;display:flex;gap:.6rem;flex-wrap:wrap">
+        <button class="btn green" id="analyze" disabled>Analisis daun</button>
+        <button class="btn dark" id="samples">Pakai contoh daun</button>
+        <button class="btn ghost" id="reset" style="color:var(--ink)">Ulangi</button>
+      </div>
+    </div>
+    <div>
+      <div class="scan" id="scan"><img id="prev" alt="Pratinjau daun"></div>
+      <div class="result" id="res"><strong>Hasil akan muncul di sini.</strong><p class="note">Alur: unggah foto → validasi → preprocessing → prediksi → hasil dan saran.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="sistem" style="background:var(--mist)">
+  <h2>Rancangan sistem</h2>
+  <p class="lead">Validasi menjaga kualitas input, CNN memproses pola, lalu hasil diterjemahkan menjadi informasi yang dapat ditindaklanjuti.</p>
+  <div class="sys" id="sys">
+    <div class="node">User</div><div class="node">Upload foto</div><div class="node">Validasi gambar</div><div class="node">Preprocessing</div><div class="node">Model CNN</div><div class="node">Prediksi kondisi</div><div class="node">Hasil &amp; rekomendasi</div>
+  </div>
+  <button class="btn" id="playSys">Putar alur sistem</button>
+  <h3 style="margin:2.4rem 0 1rem">Metode pelaksanaan</h3>
+  <div class="chips" data-tabs="mt">
+    <button class="chip on" data-t="0">1 Kebutuhan</button><button class="chip" data-t="1">2 Data</button><button class="chip" data-t="2">3 Perancangan</button><button class="chip" data-t="3">4 Prototipe</button><button class="chip" data-t="4">5 Pengujian</button><button class="chip" data-t="5">6 Evaluasi</button>
+  </div>
+  <div id="mt">
+    <div class="panel on">Identifikasi kebutuhan pengguna dan batasan sistem.</div>
+    <div class="panel">Pengumpulan dan persiapan data latih dan data uji.</div>
+    <div class="panel">Perancangan alur sistem dan antarmuka.</div>
+    <div class="panel">Pengembangan prototipe yang dapat dicoba.</div>
+    <div class="panel">Pengujian sistem dengan metrik terukur.</div>
+    <div class="panel">Evaluasi dan penyempurnaan. Iterasi adalah prinsip kerja.</div>
+  </div>
+</section>
+
+<section id="uji">
+  <h2>Pengujian sistem</h2>
+  <p class="lead">Ilustrasi dashboard evaluasi. Angka di bawah adalah contoh tampilan, bukan hasil pengujian nyata.</p>
+  <div class="grid" style="grid-template-columns:2fr 1fr;align-items:center">
+    <div><div class="bars" id="bars"></div>
+      <div class="chips" id="metricBtns"></div></div>
+    <div><div class="big" id="bigNum">92%</div><strong id="bigLbl">Accuracy</strong>
+      <p style="margin:.8rem 0 .4rem">Confusion matrix (contoh)</p>
+      <button class="btn" id="cmBtn">Tampilkan matriks</button>
+      <div id="cm"></div></div>
+  </div>
+</section>
+
+<section id="luaran" class="dark">
+  <h2>Luaran yang diharapkan</h2>
+  <p class="lead">Klik kartu untuk menandai luaran yang sudah selesai.</p>
+  <div class="grid" id="outs"></div>
+  <div id="prog"></div>
+  <div style="margin-top:1.2rem;display:flex;gap:.6rem;flex-wrap:wrap"><button class="btn green" id="allDone">Tandai semua</button><button class="btn ghost" id="noneDone">Kosongkan</button></div>
+</section>
+
+<footer>
+  <h2>Teknologi yang membantu daun berbicara lebih awal.</h2>
+  <p style="opacity:.8;max-width:55ch;margin:0 auto 1.4rem">Sistem berbasis analisis citra dan kecerdasan buatan ini diharapkan membantu identifikasi awal penyakit tanaman secara cepat dan mudah.</p>
+  <button class="btn green" id="topBtn">Kembali ke atas</button>
+  <p style="margin-top:2rem;opacity:.6">Terima kasih · Kelompok 12</p>
+</footer>
+
+<!-- Modal Auth + Profil -->
+<div id="modal" role="dialog" aria-modal="true">
+  <div class="box" id="box">
+    <button class="btn x" id="closeM" aria-label="Tutup">✕</button>
+
+    <form id="fLogin" class="on" novalidate>
+      <h3>Masuk</h3><p class="sub">Lanjutkan ke akun PlantCheck kamu.</p>
+      <div><label>Email</label><input type="email" name="email" autocomplete="email" required></div>
+      <div><label>Password</label><div class="pw"><input type="password" name="password" autocomplete="current-password" required><button type="button" class="btn toggle">Lihat</button></div></div>
+      <div class="msg"></div>
+      <button class="btn green" type="submit">Masuk</button>
+      <div class="links"><button type="button" data-go="fForgot">Lupa password?</button><button type="button" data-go="fReg">Buat akun</button></div>
+    </form>
+
+    <form id="fReg" novalidate>
+      <h3>Buat akun</h3><p class="sub">Gratis, hanya butuh satu menit.</p>
+      <div><label>Nama</label><input name="name" autocomplete="name" required></div>
+      <div><label>Email</label><input type="email" name="email" autocomplete="email" required></div>
+      <div><label>Password (min. 6 karakter)</label><div class="pw"><input type="password" name="password" autocomplete="new-password" required><button type="button" class="btn toggle">Lihat</button></div></div>
+      <div class="msg"></div>
+      <button class="btn green" type="submit">Daftar</button>
+      <div class="links"><button type="button" data-go="fLogin">Sudah punya akun? Masuk</button></div>
+    </form>
+
+    <form id="fForgot" novalidate>
+      <h3>Lupa password</h3><p class="sub">Masukkan email akunmu. Kami kirim kode 6 digit.</p>
+      <div><label>Email</label><input type="email" name="email" required></div>
+      <div class="msg"></div>
+      <button class="btn" type="submit">Kirim kode</button>
+      <div class="links"><button type="button" data-go="fReset">Sudah punya kode</button><button type="button" data-go="fLogin">Kembali</button></div>
+    </form>
+
+    <form id="fReset" novalidate>
+      <h3>Password baru</h3><p class="sub">Masukkan kode dari email dan password barumu.</p>
+      <div><label>Email</label><input type="email" name="email" required></div>
+      <div><label>Kode 6 digit</label><input name="code" inputmode="numeric" maxlength="6" required></div>
+      <div><label>Password baru</label><div class="pw"><input type="password" name="password" autocomplete="new-password" required><button type="button" class="btn toggle">Lihat</button></div></div>
+      <div class="msg"></div>
+      <button class="btn green" type="submit">Simpan password</button>
+      <div class="links"><button type="button" data-go="fLogin">Kembali ke masuk</button></div>
+    </form>
+
+    <form id="fProfile" novalidate>
+      <h3>Profil saya</h3>
+      <img class="pav" id="pav" alt="Foto profil">
+      <button type="button" class="btn dark" id="pickAv">Ganti foto</button>
+      <input type="file" id="avFile" accept="image/*" hidden>
+      <div><label>Nama</label><input name="name" required></div>
+      <div><label>Email</label><input name="email" disabled></div>
+      <div><label>Bio singkat</label><textarea name="bio" rows="2" maxlength="160"></textarea></div>
+      <div class="msg"></div>
+      <button class="btn green" type="submit">Simpan profil</button>
+      <button class="btn ghost" type="button" id="logout" style="color:var(--danger)">Keluar</button>
+    </form>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ===== Ripple + percikan klik ===== */
+document.addEventListener('pointerdown',e=>{
+  const t=e.target.closest('.btn,.chip,.card,.step');
+  if(!t)return;
+  const r=t.getBoundingClientRect(),d=Math.max(r.width,r.height),s=document.createElement('span');
+  s.className='ripple';s.style.cssText=`width:${d}px;height:${d}px;left:${e.clientX-r.left-d/2}px;top:${e.clientY-r.top-d/2}px`;
+  if(getComputedStyle(t).position==='static')t.style.position='relative';
+  t.style.overflow='hidden';t.appendChild(s);setTimeout(()=>s.remove(),700);
+  if(!reduce)burst(e.clientX,e.clientY,t.classList.contains('btn')?7:4);
+});
+function burst(x,y,n=8){
+  const c=['#52b069','#2f80ed','#b6e86b','#fff'];
+  for(let i=0;i<n;i++){const p=document.createElement('i');p.className='spark';const a=Math.random()*6.28,l=30+Math.random()*50;
+    p.style.cssText=`left:${x}px;top:${y}px;background:${c[i%4]};--dx:${Math.cos(a)*l}px;--dy:${Math.sin(a)*l}px`;
+    document.body.appendChild(p);setTimeout(()=>p.remove(),700);}
+}
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),2600)}
+
+/* ===== Judul animasi huruf per kata ===== */
+const ti=$('#title');ti.innerHTML=ti.textContent.split(' ').map((w,i)=>`<span style="animation-delay:${i*.12}s">${w}</span>`).join(' ');
+
+/* ===== Jaringan neural latar hero ===== */
+(function(){const n=$('#net'),W=1200,H=700;n.setAttribute('viewBox',`0 0 ${W} ${H}`);n.setAttribute('preserveAspectRatio','xMidYMid slice');
+  const pts=Array.from({length:26},()=>[Math.random()*W,Math.random()*H]);let h='';
+  pts.forEach((a,i)=>pts.slice(i+1).forEach(b=>{if(Math.hypot(a[0]-b[0],a[1]-b[1])<190)h+=`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="#2f80ed" stroke-opacity=".35"/>`}));
+  pts.forEach(p=>h+=`<circle cx="${p[0]}" cy="${p[1]}" r="4" fill="#5cc8ff"><animate attributeName="opacity" values=".3;1;.3" dur="${2+Math.random()*3}s" repeatCount="indefinite"/></circle>`);
+  n.innerHTML=h})();
+
+/* ===== Daun hero ===== */
+$('#leaf').onclick=e=>{e.currentTarget.classList.toggle('sick');toast(e.currentTarget.classList.contains('sick')?'Gejala terlihat: bercak coklat':'Daun sehat')};
+$('#confettiBtn').onclick=e=>{for(let i=0;i<12;i++)setTimeout(()=>burst(innerWidth*Math.random(),innerHeight*Math.random()*.7,14),i*80);toast('Semoga tanamanmu sehat! 🌱')};
+$('#topBtn').onclick=()=>scrollTo({top:0,behavior:'smooth'});
+
+/* ===== Kartu buka-tutup ===== */
+$$('#qs .card').forEach(c=>{c.onclick=()=>c.classList.toggle('open');c.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();c.click()}}});
+
+/* ===== Tab generik ===== */
+$$('[data-tabs]').forEach(g=>{const p=$$('.panel',$('#'+g.dataset.tabs));
+  $$('.chip',g).forEach(b=>b.onclick=()=>{$$('.chip',g).forEach(x=>x.classList.remove('on'));b.classList.add('on');p.forEach((x,i)=>x.classList.toggle('on',i==b.dataset.t))})});
+
+/* ===== Pipeline teknologi ===== */
+const info=['Foto daun diunggah pengguna sebagai bahan analisis.','Analisis citra menyiapkan fitur penting: ukuran dan warna dinormalisasi, area daun dipisahkan dari latar.','CNN mempelajari pola visual (warna, bercak, tekstur) untuk klasifikasi penyakit.','Hasil berupa kondisi daun dan confidence score, disertai saran pemeriksaan lanjut.'];
+$$('#flow .step').forEach(s=>s.onclick=()=>{$$('#flow .step').forEach(x=>x.classList.remove('on'));s.classList.add('on');$('#stepInfo').textContent=info[s.dataset.i]});
+
+/* ===== Alur sistem ===== */
+$('#playSys').onclick=async function(){const n=$$('#sys .node');n.forEach(x=>x.classList.remove('lit'));this.disabled=true;
+  for(const x of n){x.classList.add('lit');const r=x.getBoundingClientRect();burst(r.left+r.width/2,r.top+r.height/2,6);await new Promise(r=>setTimeout(r,450))}
+  this.disabled=false;toast('Alur selesai')};
+$$('#sys .node').forEach(n=>n.onclick=()=>n.classList.toggle('lit'));
+
+/* ===== Pengujian ===== */
+const M=[['Accuracy',92],['Precision',89],['Recall',91],['F1-score',90]];
+$('#bars').innerHTML=M.map(m=>`<div class="bar"><span>${m[1]}%</span><i data-h="${m[1]}"></i><small>${m[0]}</small></div>`).join('');
+$('#metricBtns').innerHTML=M.map((m,i)=>`<button class="chip ${i?'':'on'}" data-m="${i}">${m[0]}</button>`).join('');
+new IntersectionObserver((es,o)=>es.forEach(e=>{if(e.isIntersecting){$$('#bars i').forEach(b=>b.style.height=b.dataset.h+'%');o.disconnect()}}),{threshold:.3}).observe($('#bars'));
+function count(el,to){let v=0;const t=setInterval(()=>{v+=Math.ceil((to-v)/6)||1;el.textContent=v+'%';if(v>=to)clearInterval(t)},35)}
+$$('#metricBtns .chip').forEach(b=>b.onclick=()=>{$$('#metricBtns .chip').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+  const m=M[b.dataset.m];$('#bigLbl').textContent=m[0];count($('#bigNum'),m[1]);$$('#bars .bar').forEach((x,i)=>x.classList.toggle('sel',i==b.dataset.m))});
+$('#cmBtn').onclick=()=>{$('#cm').innerHTML=['Benar sehat<br>46','Salah sakit<br>4','Salah sehat<br>5','Benar sakit<br>45'].map(x=>`<div>${x}</div>`).join('')};
+
+/* ===== Luaran ===== */
+const O=['Prototype sistem','Dataset terdokumentasi','Laporan pengujian','Artikel ilmiah','Dokumentasi sistem'];
+$('#outs').innerHTML=O.map(o=>`<div class="card out" tabindex="0" style="color:var(--ink)"><span class="tick">✓</span><h3>${o}</h3></div>`).join('');
+const upd=()=>{const n=$$('#outs .done').length;$('#prog').textContent=`${n} dari ${O.length} luaran selesai`;if(n===O.length){burst(innerWidth/2,innerHeight/2,30);toast('Semua luaran selesai 🎉')}};
+$$('#outs .card').forEach(c=>{c.onclick=()=>{c.classList.toggle('done');upd()};c.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();c.click()}}});
+$('#allDone').onclick=()=>{$$('#outs .card').forEach(c=>c.classList.add('done'));upd()};
+$('#noneDone').onclick=()=>{$$('#outs .card').forEach(c=>c.classList.remove('done'));upd()};upd();
+
+/* ===== Pengecek daun (demo berbasis warna) ===== */
+let img=null;const drop=$('#drop'),file=$('#file');
+function load(src){const i=new Image();i.onload=()=>{img=i;$('#prev').src=src;$('#prev').style.display='block';$('#analyze').disabled=false;
+  $('#res').innerHTML='<strong>Foto siap.</strong> Klik "Analisis daun".'};i.src=src}
+function readFile(f){if(!f||!f.type.startsWith('image/'))return toast('Pilih file gambar');const r=new FileReader();r.onload=()=>load(r.result);r.readAsDataURL(f)}
+drop.onclick=()=>file.click();drop.onkeydown=e=>{if(e.key==='Enter')file.click()};
+file.onchange=()=>readFile(file.files[0]);
+['dragenter','dragover'].forEach(v=>drop.addEventListener(v,e=>{e.preventDefault();drop.classList.add('over')}));
+['dragleave','drop'].forEach(v=>drop.addEventListener(v,e=>{e.preventDefault();drop.classList.remove('over')}));
+drop.addEventListener('drop',e=>readFile(e.dataTransfer.files[0]));
+$('#reset').onclick=()=>{img=null;$('#prev').style.display='none';$('#analyze').disabled=true;file.value='';$('#res').innerHTML='<strong>Hasil akan muncul di sini.</strong>'};
+function sample(sick){const c=document.createElement('canvas');c.width=c.height=240;const x=c.getContext('2d');x.fillStyle='#eef3ee';x.fillRect(0,0,240,240);
+  x.fillStyle=sick?'#6f9a35':'#2f8a45';x.beginPath();x.moveTo(120,15);x.bezierCurveTo(30,70,30,170,120,230);x.bezierCurveTo(210,170,210,70,120,15);x.fill();
+  if(sick){for(let i=0;i<14;i++){x.fillStyle=i%3?'#5a3516':'#d6c03a';x.beginPath();x.arc(80+Math.random()*80,60+Math.random()*130,5+Math.random()*9,0,7);x.fill()}}
+  return c.toDataURL()}
+let sk=false;$('#samples').onclick=()=>{load(sample(sk));sk=!sk;toast(sk?'Contoh: daun sehat':'Contoh: daun bercak')};
+$('#analyze').onclick=async()=>{
+  if(!img)return;const b=$('#analyze');b.disabled=true;$('#scan').classList.add('run');
+  $('#res').innerHTML='<strong>Menganalisis…</strong><div class="meter"><i id="m1"></i></div>';requestAnimationFrame(()=>$('#m1').style.width='90%');
+  await new Promise(r=>setTimeout(r,1300));
+  const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d');x.drawImage(img,0,0,64,64);const d=x.getImageData(0,0,64,64).data;
+  let leaf=0,green=0,brown=0,yellow=0;
+  for(let i=0;i<d.length;i+=4){const r=d[i],g=d[i+1],bl=d[i+2],mx=Math.max(r,g,bl),mn=Math.min(r,g,bl);if(mx>215&&mx-mn<30||mx-mn<22)continue;leaf++;
+    if(r>150&&g>150&&bl<110)yellow++;else if(r>g&&r>bl&&g<150)brown++;else if(g>=r&&g>bl)green++}
+  $('#scan').classList.remove('run');b.disabled=false;
+  if(leaf<150){$('#res').innerHTML='<strong style="color:var(--danger)">Foto belum valid</strong><p>Daun tidak terdeteksi jelas. Ambil foto lebih dekat dengan latar polos dan cahaya cukup.</p>';return}
+  const bp=brown/leaf,yp=yellow/leaf,sick=bp+yp;let t,col,tip,conf;
+  if(sick<.06){t='Daun tampak sehat';col='#2e8b47';conf=Math.min(97,80+green/leaf*17);tip='Pantau rutin dan jaga kelembapan serta nutrisi tanaman.'}
+  else if(bp>=yp){t='Indikasi bercak coklat (kemungkinan penyakit bercak daun)';col='#b5651d';conf=Math.min(94,60+bp*140);tip='Pisahkan daun terdampak, kurangi kelembapan berlebih, dan konsultasikan ke penyuluh pertanian.'}
+  else{t='Indikasi menguning (kemungkinan kekurangan nutrisi atau klorosis)';col='#b59b00';conf=Math.min(92,58+yp*140);tip='Periksa pemupukan dan drainase, lalu bandingkan dengan daun lain.'}
+  conf=Math.round(conf);
+  $('#res').innerHTML=`<h3 style="color:${col}">${t}</h3><p>Confidence score: <strong id="cv">0%</strong></p><div class="meter"><i id="m2"></i></div><p><strong>Saran:</strong> ${tip}</p><p>Area sakit terdeteksi: ${(sick*100).toFixed(1)}% dari permukaan daun.</p><p class="note">Hasil demo berbasis analisis warna, bukan diagnosis. Hubungi ahli untuk pemeriksaan lanjut.</p>`;
+  requestAnimationFrame(()=>$('#m2').style.width=conf+'%');count($('#cv'),conf);
+  const r=$('#res').getBoundingClientRect();if(sick<.06)burst(r.left+r.width/2,r.top+40,24)};
+
+/* ===== Auth ===== */
+const API='/api';let me=null;
+const tok=()=>localStorage.getItem('pc_token');
+async function call(path,method='GET',body){
+  const r=await fetch(API+path,{method,headers:{'Content-Type':'application/json',...(tok()?{Authorization:'Bearer '+tok()}:{})},body:body?JSON.stringify(body):undefined});
+  const j=await r.json().catch(()=>({error:'Respon server tidak valid.'}));if(!r.ok)throw new Error(j.error||'Terjadi kesalahan.');return j}
+const modal=$('#modal');
+function show(id){$$('#box form').forEach(f=>f.classList.toggle('on',f.id===id));$$('.msg').forEach(m=>{m.textContent='';m.className='msg'})}
+function openM(id){show(id||(me?'fProfile':'fLogin'));modal.classList.add('on')}
+function closeM(){modal.classList.remove('on')}
+$('#closeM').onclick=closeM;modal.onclick=e=>{if(e.target===modal)closeM()};addEventListener('keydown',e=>{if(e.key==='Escape')closeM()});
+$('#authBtn').onclick=()=>openM();$('#heroLogin').onclick=()=>openM();$('#navAv').onclick=()=>openM('fProfile');
+$$('[data-go]').forEach(b=>b.onclick=()=>show(b.dataset.go));
+$$('.toggle').forEach(b=>b.onclick=()=>{const i=b.previousElementSibling;i.type=i.type==='password'?'text':'password';b.textContent=i.type==='password'?'Lihat':'Sembunyi'});
+function msg(f,t,ok){const m=$('.msg',f);m.textContent=t;m.className='msg '+(ok?'ok':'err');if(!ok){const b=$('#box');b.classList.remove('shake');void b.offsetWidth;b.classList.add('shake')}}
+function setMe(u){me=u;const on=!!u;$('#authBtn').style.display=on?'none':'';const a=$('#navAv');a.style.display=on?'grid':'none';
+  if(on){a.innerHTML=u.avatar?`<img src="${u.avatar}" class="avatar" style="border:0" alt="">`:u.name[0].toUpperCase();
+    const f=$('#fProfile');f.name.value=u.name;f.email.value=u.email;f.bio.value=u.bio||'';$('#pav').src=u.avatar||'data:image/svg+xml,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10" fill="#e4efe6"/><text x="5" y="7" font-size="5" text-anchor="middle">🍃</text></svg>')}}
+function form(id,fn){const f=$('#'+id);f.onsubmit=async e=>{e.preventDefault();const b=$('button[type=submit]',f);b&&(b.disabled=true);
+  try{await fn(f,Object.fromEntries(new FormData(f)))}catch(er){msg(f,er.message,false)}b&&(b.disabled=false)}}
+form('fLogin',async(f,d)=>{const j=await call('/login','POST',d);localStorage.setItem('pc_token',j.token);setMe(j.user);closeM();toast('Selamat datang, '+j.user.name+'!');burst(innerWidth/2,innerHeight/3,26)});
+form('fReg',async(f,d)=>{const j=await call('/register','POST',d);localStorage.setItem('pc_token',j.token);setMe(j.user);closeM();toast('Akun dibuat. Selamat datang!');burst(innerWidth/2,innerHeight/3,30)});
+form('fForgot',async(f,d)=>{const j=await call('/forgot','POST',d);msg(f,j.message+(j.demoCode?' Kode demo: '+j.demoCode:''),true);
+  const r=$('#fReset');r.email.value=d.email;if(j.demoCode)r.code.value=j.demoCode;setTimeout(()=>show('fReset'),j.demoCode?1800:1200)});
+form('fReset',async(f,d)=>{const j=await call('/reset','POST',d);msg(f,j.message,true);setTimeout(()=>show('fLogin'),1300)});
+form('fProfile',async(f,d)=>{const j=await call('/profile','PUT',{name:d.name,bio:d.bio});setMe(j.user);msg(f,'Profil tersimpan.',true);toast('Profil diperbarui')});
+$('#pickAv').onclick=()=>$('#avFile').click();
+$('#avFile').onchange=e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{const i=new Image();i.onload=async()=>{
+  const c=document.createElement('canvas');c.width=c.height=160;const x=c.getContext('2d');const s=Math.min(i.width,i.height);
+  x.drawImage(i,(i.width-s)/2,(i.height-s)/2,s,s,0,0,160,160);
+  try{const j=await call('/profile','PUT',{avatar:c.toDataURL('image/jpeg',.8)});setMe(j.user);toast('Foto profil diganti')}catch(er){msg($('#fProfile'),er.message,false)}};i.src=r.result};r.readAsDataURL(f)};
+$('#logout').onclick=()=>{localStorage.removeItem('pc_token');setMe(null);closeM();toast('Kamu sudah keluar')};
+if(tok())call('/me').then(j=>setMe(j.user)).catch(()=>localStorage.removeItem('pc_token'));
+</script>
+</body>
+</html>
