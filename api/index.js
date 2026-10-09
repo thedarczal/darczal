@@ -25,11 +25,27 @@ const sign = (u) => jwt.sign({ id: u._id.toString() }, process.env.JWT_SECRET, {
 const clean = (u) => ({ name: u.name, email: u.email, avatar: u.avatar || '', bio: u.bio || '' });
 const hash = (s) => crypto.createHash('sha256').update(s).digest('hex');
 const validEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+function explain(e) {
+  const m = String((e && e.message) || e);
+  if (!process.env.MONGODB_URI) return 'MONGODB_URI belum diisi di Environment Variables Vercel (atau belum Redeploy).';
+  if (!process.env.JWT_SECRET) return 'JWT_SECRET belum diisi di Environment Variables Vercel (atau belum Redeploy).';
+  if (/Invalid scheme|Invalid connection string|URI malformed|must be escaped/i.test(m)) return 'Format MONGODB_URI salah. Harus diawali mongodb+srv://, tanpa tanda < >, dan karakter khusus di password (@ # / : ?) harus di-encode.';
+  if (/bad auth|Authentication failed/i.test(m)) return 'Username atau password database salah. Cek Database Access di Atlas.';
+  if (/ENOTFOUND|querySrv|ECONNREFUSED/i.test(m)) return 'Alamat cluster pada MONGODB_URI tidak ditemukan. Salin ulang connection string dari Atlas.';
+  if (/Server selection timed out|ReplicaSetNoPrimary|not whitelisted|IP/i.test(m)) return 'Atlas menolak koneksi. Buka Network Access dan tambahkan 0.0.0.0/0, lalu tunggu 1-2 menit.';
+  return 'Server bermasalah: ' + m.slice(0, 160);
+}
 const wrap = (fn) => (req, res) => fn(req, res).catch((e) => {
   console.error(e);
   cached = null;
-  res.status(500).json({ error: 'Server bermasalah. Cek MONGODB_URI dan Network Access di MongoDB Atlas.' });
+  res.status(500).json({ error: explain(e) });
 });
+
+app.get('/api/health', wrap(async (req, res) => {
+  const env = { MONGODB_URI: !!process.env.MONGODB_URI, JWT_SECRET: !!process.env.JWT_SECRET };
+  await (await getDb()).command({ ping: 1 });
+  res.json({ ok: true, env, db: 'terhubung' });
+}));
 
 async function auth(req, res, next) {
   try {
